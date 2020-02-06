@@ -2,15 +2,16 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ecr"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
-    "encoding/json"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ecr"
 )
 
 func main() {
@@ -21,15 +22,15 @@ func main() {
 	componentName := os.Args[1]
 	version := os.Args[2]
 
-    image := run(componentName, version)
-    data, err := json.Marshal(map[string]string{"image": image})
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println(string(data))
+	image := run(componentName, version)
+	data, err := json.Marshal(map[string]string{"image": image})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(data))
 }
 
-func run (componentName string, version string) string {
+func run(componentName string, version string) string {
 	username, password, endpoint := getCredentials()
 	dockerLogin(username, password, endpoint)
 
@@ -37,8 +38,8 @@ func run (componentName string, version string) string {
 	image := fmt.Sprintf("%s/%s:%s", registry, componentName, version)
 
 	runCommand("docker", "build", "-t", image, ".")
-	//runCommand("docker", "push", image)
-    return image
+	runCommand("docker", "push", image)
+	return image
 }
 
 func getCredentials() (string, string, string) {
