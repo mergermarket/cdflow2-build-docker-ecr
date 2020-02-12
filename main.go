@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -27,7 +28,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(data))
+	if err := ioutil.WriteFile("/release-metadata.json", data, 0644); err != nil {
+		log.Fatalln("error writing release metadata:", err)
+	}
 }
 
 func run(componentName string, version string) string {
