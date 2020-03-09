@@ -15,11 +15,9 @@ import (
 
 type mockECRClient struct {
 	ecriface.ECRAPI
-	called int
 }
 
 func (mock *mockECRClient) GetAuthorizationToken(input *ecr.GetAuthorizationTokenInput) (*ecr.GetAuthorizationTokenOutput, error) {
-	mock.called++
 	return &ecr.GetAuthorizationTokenOutput{
 		AuthorizationData: []*ecr.AuthorizationData{
 			&ecr.AuthorizationData{AuthorizationToken: aws.String(base64.StdEncoding.EncodeToString([]byte("test-username:test-password")))},
