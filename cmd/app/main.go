@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) == 2 && os.Args[0] == "requirements" {
+	if len(os.Args) == 2 && os.Args[1] == "requirements" {
 		// requirements is a way for the release container to communciate its requirements to the
 		// config container
 		if err := json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
