@@ -17,7 +17,7 @@ func main() {
 		// requirements is a way for the release container to communciate its requirements to the
 		// config container
 		if err := json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
-			"env": []string{"ECR_REGISTRY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"},
+			"needs": []string{"ecr"},
 		}); err != nil {
 			log.Panicln("error encoding requirements:", err)
 		}
