@@ -50,13 +50,13 @@ func TestRun(t *testing.T) {
 	commandRunner := &mockCommandRunner{}
 
 	// When
-	app.Run(ecr, commandRunner, "test-registry", "test-build-id", "test-version")
+	app.Run(ecr, commandRunner, "test-repository", "test-build-id", "test-version")
 
 	// Then
 	if !reflect.DeepEqual(commandRunner.commands, []called{
-		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-registry"}, input: "test-password"},
-		{command: "docker", args: []string{"build", "-t", "test-registry:test-build-id-test-version", "."}},
-		{command: "docker", args: []string{"push", "test-registry:test-build-id-test-version"}},
+		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
+		{command: "docker", args: []string{"build", "-t", "test-repository:test-build-id-test-version", "."}},
+		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}

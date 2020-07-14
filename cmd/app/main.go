@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 	// declared above
-	registry := os.Getenv("ECR_REGISTRY")
+	repository := os.Getenv("ECR_REPOSITORY")
 
 	// built-in
 	buildID := os.Getenv("BUILD_ID")
@@ -33,7 +33,7 @@ func main() {
 	image := app.Run(
 		ecr.New(session.Must(session.NewSession())),
 		&app.ExecCommandRunner{OutputStream: os.Stdout, ErrorStream: os.Stderr},
-		registry,
+		repository,
 		buildID,
 		version,
 	)
