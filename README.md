@@ -1,6 +1,6 @@
 # mergermarket/cdflow-build-docker-ecr
 
-* [mergermarket/cdflow-build-docker-ecr on DockerHub](https://hub.docker.com/repository/docker/mergermarket/cdflow2-build-docker-ecr).
+* [mergermarket/cdflow-build-docker-ecr on DockerHub](https://hub.docker.com/r/mergermarket/cdflow2-build-docker-ecr).
 * [mergermarket/cdflow-build-docker-ecr on GitHub](https://github.com/mergermarket/cdflow2-build-docker-ecr).
 
 [cdflow2](https://developer-preview.acuris.com/opensource/cdflow2/) build plugin for building docker images and pushing them to [AWS ECR](https://aws.amazon.com/ecr/). Performs the following steps:
@@ -11,7 +11,7 @@
 * Does a `docker push` to push the image to the ECR repository.
 * Provides an `image` release metadata key so the resulting docker image can be used from terraform - via a terraform map variable named the same as the build (i.e. the key under `builds` in the `cdflow.yaml` - "docker" is a good choice)
 
-Requires a cdflow2 config container with support for providing ECR config - e.g. [mergermarket/cdflow2-config-acuris](https://hub.docker.com/repository/docker/mergermarket/cdflow2-config-acuris).
+Requires a cdflow2 config container with support for providing ECR config - e.g. [mergermarket/cdflow2-config-acuris](https://hub.docker.com/r/mergermarket/cdflow2-config-acuris).
 
 ## Usage
 
@@ -45,7 +45,7 @@ FROM hello-world
 
 At time of writing the only config container that supports this build plugin is:
 
-* [mergermarket/cdflow2-config-acuris](https://hub.docker.com/repository/docker/mergermarket/cdflow2-config-acuris).
+* [mergermarket/cdflow2-config-acuris](https://hub.docker.com/r/mergermarket/cdflow2-config-acuris).
 
 ### Adding support in a config container
 
