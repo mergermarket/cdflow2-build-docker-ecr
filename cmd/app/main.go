@@ -19,7 +19,7 @@ func main() {
 		if err := json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
 			"needs": []string{"ecr"},
 		}); err != nil {
-			log.Panicln("error  encoding requirements:", err)
+			log.Panicln("error encoding requirements:", err)
 		}
 		return
 	}
