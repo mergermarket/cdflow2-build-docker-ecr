@@ -15,4 +15,6 @@ RUN apk add --no-cache docker-cli
 
 COPY --from=builder /build/app /app
 
+LABEL type="platform"
+
 ENTRYPOINT ["/app"]
