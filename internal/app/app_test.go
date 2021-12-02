@@ -49,8 +49,29 @@ func TestRun(t *testing.T) {
 	ecr := &mockECRClient{}
 	commandRunner := &mockCommandRunner{}
 
+	params := map[string]interface{}{}
+
+	// When
+	app.Run(ecr, commandRunner, params, "test-repository", "test-build-id", "test-version")
+
+	// Then
+	if !reflect.DeepEqual(commandRunner.commands, []called{
+		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
+		{command: "docker", args: []string{"build", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
+		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
+	}) {
+		log.Fatal("unexpected commands:", commandRunner.commands)
+	}
+
+}
+
+func TestRunWithParams(t *testing.T) {
+	// Given
+	ecr := &mockECRClient{}
+	commandRunner := &mockCommandRunner{}
+
 	params := map[string]interface{}{
-		"dockerfile": "Dockerfile",
+		"dockerfile": "test1.Dockerfile",
 	}
 
 	// When
@@ -59,7 +80,7 @@ func TestRun(t *testing.T) {
 	// Then
 	if !reflect.DeepEqual(commandRunner.commands, []called{
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
-		{command: "docker", args: []string{"build", "-t", "test-repository:test-build-id-test-version", "."}},
+		{command: "docker", args: []string{"build", "-f", "test1.Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
 		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
