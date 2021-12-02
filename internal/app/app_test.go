@@ -49,8 +49,12 @@ func TestRun(t *testing.T) {
 	ecr := &mockECRClient{}
 	commandRunner := &mockCommandRunner{}
 
+	params := map[string]interface{}{
+		"dockerfile": "Dockerfile",
+	}
+
 	// When
-	app.Run(ecr, commandRunner, "test-repository", "test-build-id", "test-version")
+	app.Run(ecr, commandRunner, params, "test-repository", "test-build-id", "test-version")
 
 	// Then
 	if !reflect.DeepEqual(commandRunner.commands, []called{
