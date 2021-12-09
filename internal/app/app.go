@@ -16,7 +16,12 @@ import (
 )
 
 // Run runs the build process.
-func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, repository, buildID, version string) string {
+func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]interface{}, repository, buildID, version string) (string, error) {
+	config, err := getConfig(buildID, params)
+	if err != nil {
+		return "", fmt.Errorf("error getting config: %w", err)
+	}
+
 	fmt.Fprintf(os.Stderr, "- Getting ECR auth token...\n")
 	username, password := getCredentials(ecrClient)
 
@@ -29,13 +34,28 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, repository, buildID, v
 	attemptToLoginToRegistriesInDockerFile(runner)
 	fmt.Fprintf(os.Stderr, "\n- Building docker image...\n\n")
 	fmt.Fprintf(os.Stderr, "$ docker build -t %s .\n\n", image)
-	runner.Run("docker", "build", "-t", image, ".")
+	runner.Run("docker", "build", "-f", config.dockerfile, "-t", image, ".")
 
 	fmt.Fprintf(os.Stderr, "\n- Pushing docker image...\n\n")
 	fmt.Fprintf(os.Stderr, "$ docker push %s\n\n", image)
 	runner.Run("docker", "push", image)
 
-	return image
+	return image, nil
+}
+
+type config struct {
+	dockerfile string
+}
+
+func getConfig(buildID string, params map[string]interface{}) (*config, error) {
+	result := config{}
+	ok := false
+	if _, exists := params["dockerfile"]; !exists {
+		result.dockerfile = "Dockerfile"
+	} else if result.dockerfile, ok = params["dockerfile"].(string); !ok {
+		return nil, fmt.Errorf("unexpected type for build.%v.params.dockerfile: %T (should be string)", buildID, params["dockerfile"])
+	}
+	return &result, nil
 }
 
 func getCredentials(ecrClient ecriface.ECRAPI) (string, string) {

@@ -30,13 +30,23 @@ func main() {
 	buildID := os.Getenv("BUILD_ID")
 	version := os.Getenv("VERSION")
 
-	image := app.Run(
+	params := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(os.Getenv("MANIFEST_PARAMS")), &params); err != nil {
+		log.Fatalln("error loading MANIFEST_PARAMS:", err)
+	}
+
+	image, err := app.Run(
 		ecr.New(session.Must(session.NewSession())),
 		&app.ExecCommandRunner{OutputStream: os.Stdout, ErrorStream: os.Stderr},
+		params,
 		repository,
 		buildID,
 		version,
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	data, err := json.Marshal(map[string]string{"image": image})
 	if err != nil {
 		log.Fatal(err)
