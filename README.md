@@ -15,9 +15,9 @@ Requires a cdflow2 config container with support for providing ECR config - e.g.
 
 ## Usage
 
-### `cdflow2.yaml`:
+### cdflow.yaml
 
-This example uses `mergermarket/cdflow2-config-acuris`, which supports creating an ECR repository and providing the config for it as environment variables to the build (this config contianer is only sutiable for developing within Acuris).
+This example uses `mergermarket/cdflow2-config-acuris`, which supports creating an ECR repository and providing the config for it as environment variables to the build (this config container is only suitable for developing within Acuris).
 
 ```yaml
 version: 2
@@ -29,11 +29,14 @@ config:
 builds:
   docker:
     image: mergermarket/cdflow2-build-docker-ecr
+    params:
+      dockerfile: Dockerfile
+      context: .
 terraform:
   image: hashicorp/terraform
 ```
 
-### `Dockerfile`
+### Dockerfile
 
 Will build a docker image from a Dockerfile in the root of the project. This could be anything, in this case a simple hello world.
 
@@ -41,11 +44,24 @@ Will build a docker image from a Dockerfile in the root of the project. This cou
 FROM hello-world
 ```
 
+### Parameters
+
+#### dockerfile
+
+Change the Dockerfile path used for the build.  
+Default path is `Dockerfile` in the same directory as the `cdflow.yaml`.
+
+#### context
+
+Change the context of the build. A build’s context is the set of files located in the specified path.  
+Defaults to `.`.
+
 ## Config container support
 
-At time of writing the only config container that supports this build plugin is:
+Config containers that supports this build plugin are:
 
 * [mergermarket/cdflow2-config-acuris](https://hub.docker.com/r/mergermarket/cdflow2-config-acuris).
+* [mergermarket/cdflow2-config-aws-simple](https://github.com/mergermarket/cdflow2-config-aws-simple)
 
 ### Adding support in a config container
 

@@ -33,8 +33,8 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 
 	attemptToLoginToRegistriesInDockerFile(runner)
 	fmt.Fprintf(os.Stderr, "\n- Building docker image...\n\n")
-	fmt.Fprintf(os.Stderr, "$ docker build -t %s .\n\n", image)
-	runner.Run("docker", "build", "-f", config.dockerfile, "-t", image, ".")
+	fmt.Fprintf(os.Stderr, "$ docker build -f %s -t %s %s\n\n", config.dockerfile, image, config.context)
+	runner.Run("docker", "build", "-f", config.dockerfile, "-t", image, config.context)
 
 	fmt.Fprintf(os.Stderr, "\n- Pushing docker image...\n\n")
 	fmt.Fprintf(os.Stderr, "$ docker push %s\n\n", image)
@@ -45,16 +45,31 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 
 type config struct {
 	dockerfile string
+	context    string
 }
 
 func getConfig(buildID string, params map[string]interface{}) (*config, error) {
-	result := config{}
-	ok := false
-	if _, exists := params["dockerfile"]; !exists {
-		result.dockerfile = "Dockerfile"
-	} else if result.dockerfile, ok = params["dockerfile"].(string); !ok {
-		return nil, fmt.Errorf("unexpected type for build.%v.params.dockerfile: %T (should be string)", buildID, params["dockerfile"])
+	result := config{
+		dockerfile: "Dockerfile",
+		context:    ".",
 	}
+
+	dockerFileI, ok := params["dockerfile"]
+	if ok {
+		result.dockerfile, ok = dockerFileI.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.dockerfile: %T (should be string)", buildID, dockerFileI)
+		}
+	}
+
+	contextI, ok := params["context"]
+	if ok {
+		result.context, ok = contextI.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.context: %T (should be string)", buildID, contextI)
+		}
+	}
+
 	return &result, nil
 }
 

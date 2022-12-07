@@ -72,6 +72,7 @@ func TestRunWithParams(t *testing.T) {
 
 	params := map[string]interface{}{
 		"dockerfile": "test1.Dockerfile",
+		"context":    "./test",
 	}
 
 	// When
@@ -80,7 +81,7 @@ func TestRunWithParams(t *testing.T) {
 	// Then
 	if !reflect.DeepEqual(commandRunner.commands, []called{
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
-		{command: "docker", args: []string{"build", "-f", "test1.Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
+		{command: "docker", args: []string{"build", "-f", "test1.Dockerfile", "-t", "test-repository:test-build-id-test-version", "./test"}},
 		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
