@@ -104,6 +104,7 @@ func TestBuildxRun(t *testing.T) {
 	// Then
 	if !reflect.DeepEqual(commandRunner.commands, []called{
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
+		{command: "docker", args: []string{"run", "--privileged", "--rm", "tonistiigi/binfmt", "--install", "all"}},
 		{command: "docker", args: []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}},
 		{command: "docker", args: []string{"buildx", "build", "--push", "--platform", "linux/arm64,linux/386,linux/s390x", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
 	}) {

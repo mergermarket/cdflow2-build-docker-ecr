@@ -60,19 +60,24 @@ func build(config *config, image string, runner CommandRunner) {
 }
 
 func buildWithBuildx(config *config, image string, runner CommandRunner) {
-	args := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
+	qemuInstallArgs := []string{"run", "--privileged", "--rm", "tonistiigi/binfmt", "--install", "all"}
 
-	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(args, " "))
-	runner.Run("docker", args...)
+	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(qemuInstallArgs, " "))
+	runner.Run("docker", qemuInstallArgs...)
 
-	args = []string{"buildx", "build", "--push"}
+	builderCreateArgs := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
+
+	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(builderCreateArgs, " "))
+	runner.Run("docker", builderCreateArgs...)
+
+	buildArgs := []string{"buildx", "build", "--push"}
 	if config.platform != "" {
-		args = append(args, "--platform", config.platform)
+		buildArgs = append(buildArgs, "--platform", config.platform)
 	}
-	args = append(args, "-f", config.dockerfile, "-t", image, config.context)
+	buildArgs = append(buildArgs, "-f", config.dockerfile, "-t", image, config.context)
 
-	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(args, " "))
-	runner.Run("docker", args...)
+	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(buildArgs, " "))
+	runner.Run("docker", buildArgs...)
 }
 
 func getConfig(buildID string, params map[string]interface{}) (*config, error) {

@@ -66,6 +66,7 @@ Defaults to `false`.
 
 Comma-separated list of platforms for the build, when buildx is enabled.  
 E.g.: `linux/arm64,linux/386,linux/s390x`.  
+Available platforms depends on the host and installed QEMU emulators.  
 If buildx not enabled, parameter ignored.  
 Defaults to empty list.
 
