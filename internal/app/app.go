@@ -15,6 +15,13 @@ import (
 	"github.com/docker/docker/registry"
 )
 
+type config struct {
+	dockerfile string
+	context    string
+	buildx     bool
+	platform   string
+}
+
 // Run runs the build process.
 func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]interface{}, repository, buildID, version string) (string, error) {
 	config, err := getConfig(buildID, params)
@@ -33,19 +40,39 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 
 	attemptToLoginToRegistriesInDockerFile(runner)
 	fmt.Fprintf(os.Stderr, "\n- Building docker image...\n\n")
+
+	if config.buildx {
+		buildWithBuildx(config, image, runner)
+	} else {
+		build(config, image, runner)
+	}
+
+	return image, nil
+}
+
+func build(config *config, image string, runner CommandRunner) {
 	fmt.Fprintf(os.Stderr, "$ docker build -f %s -t %s %s\n\n", config.dockerfile, image, config.context)
 	runner.Run("docker", "build", "-f", config.dockerfile, "-t", image, config.context)
 
 	fmt.Fprintf(os.Stderr, "\n- Pushing docker image...\n\n")
 	fmt.Fprintf(os.Stderr, "$ docker push %s\n\n", image)
 	runner.Run("docker", "push", image)
-
-	return image, nil
 }
 
-type config struct {
-	dockerfile string
-	context    string
+func buildWithBuildx(config *config, image string, runner CommandRunner) {
+	args := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
+
+	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(args, " "))
+	runner.Run("docker", args...)
+
+	args = []string{"buildx", "build", "--push"}
+	if config.platform != "" {
+		args = append(args, "--platform", config.platform)
+	}
+	args = append(args, "-f", config.dockerfile, "-t", image, config.context)
+
+	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(args, " "))
+	runner.Run("docker", args...)
 }
 
 func getConfig(buildID string, params map[string]interface{}) (*config, error) {
@@ -67,6 +94,22 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 		result.context, ok = contextI.(string)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for build.%v.params.context: %T (should be string)", buildID, contextI)
+		}
+	}
+
+	buildxI, ok := params["buildx"]
+	if ok {
+		result.buildx, ok = buildxI.(bool)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.buildx: %T (should be bool)", buildID, buildxI)
+		}
+	}
+
+	platformI, ok := params["platform"]
+	if ok {
+		result.platform, ok = platformI.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.platform: %T (should be string)", buildID, platformI)
 		}
 	}
 

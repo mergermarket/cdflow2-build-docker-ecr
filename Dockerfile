@@ -11,7 +11,7 @@ RUN go build ./cmd/app
 
 FROM alpine:latest
 
-RUN apk add --no-cache docker-cli
+RUN apk update && apk add --no-cache docker-cli-buildx
 
 COPY --from=builder /build/app /app
 
