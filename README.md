@@ -56,6 +56,21 @@ Default path is `Dockerfile` in the same directory as the `cdflow.yaml`.
 Change the context of the build. A build’s context is the set of files located in the specified path.  
 Defaults to `.`.
 
+#### buildx
+
+Use buildx for image creation with multi architecture support instead of the classic build command.  
+Boolean parameter.  
+Defaults to `false`.
+
+#### platform
+
+Comma-separated list of platforms for the build, when buildx is enabled.  
+E.g.: `linux/arm64,linux/386,linux/s390x`.  
+Available platforms depends on the host and installed QEMU emulators.  
+Check [https://github.com/tonistiigi/binfmt](https://github.com/tonistiigi/binfmt) for more info.  
+If buildx not enabled, parameter ignored.  
+Defaults to empty list.
+
 ## Config container support
 
 Config containers that supports this build plugin are:
