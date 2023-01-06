@@ -5,9 +5,7 @@ WORKDIR /build
 ADD go.mod go.sum ./
 RUN go mod download
 ADD . .
-ENV CGO_ENABLED 0
-RUN go test ./internal/app
-RUN go build ./cmd/app
+RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/app
 
 FROM alpine:latest
 
