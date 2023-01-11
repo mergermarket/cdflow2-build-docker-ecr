@@ -1,0 +1,33 @@
+name: Publish to Docker Hub
+on: 
+  workflow_run:
+    branches:
+      - master
+    workflows: 
+      - Unit tests
+    types:
+      - completed
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Publish docker image
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: mergermarket/cdflow2-build-docker-ecr:latest
