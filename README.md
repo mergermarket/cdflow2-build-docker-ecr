@@ -71,6 +71,42 @@ Check [https://github.com/tonistiigi/binfmt](https://github.com/tonistiigi/binfm
 If buildx not enabled, parameter ignored.  
 Defaults to empty list.
 
+#### cache-from
+
+Import docker layer cache from specific source.  
+Currently only "gha" supported.  
+For supported options check: https://docs.docker.com/engine/reference/commandline/buildx_build/#cache-from.  
+If buildx not enabled, parameter ignored.  
+Defaults to empty string.  
+
+```yaml
+  buildx:
+    image: mergermarket/cdflow2-build-docker-ecr:latest
+    params:
+      buildx: true
+      platform: linux/arm64,linux/386
+      cache-from: type=gha
+      cache-to: type=gha,mode=max
+```
+
+#### cache-to
+
+Export docker layer to specific destination.  
+Currently only "gha" supported.  
+For supported options check: https://docs.docker.com/engine/reference/commandline/buildx_build/#cache-from.  
+If buildx not enabled, parameter ignored.  
+Defaults to empty string.  
+
+```yaml
+  buildx:
+    image: mergermarket/cdflow2-build-docker-ecr:latest
+    params:
+      buildx: true
+      platform: linux/arm64,linux/386
+      cache-from: type=gha
+      cache-to: type=gha,mode=max
+```
+
 ## Config container support
 
 Config containers that supports this build plugin are:
