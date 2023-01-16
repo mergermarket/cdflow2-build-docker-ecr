@@ -20,6 +20,8 @@ type config struct {
 	context    string
 	buildx     bool
 	platform   string
+	cacheFrom  string
+	cacheTo    string
 }
 
 // Run runs the build process.
@@ -74,6 +76,15 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) {
 	if config.platform != "" {
 		buildArgs = append(buildArgs, "--platform", config.platform)
 	}
+
+	if config.cacheFrom != "" {
+		buildArgs = append(buildArgs, "--cache-from", config.cacheFrom)
+	}
+
+	if config.cacheTo != "" {
+		buildArgs = append(buildArgs, "--cache-to", config.cacheTo)
+	}
+
 	buildArgs = append(buildArgs, "-f", config.dockerfile, "-t", image, config.context)
 
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(buildArgs, " "))
@@ -115,6 +126,34 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 		result.platform, ok = platformI.(string)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for build.%v.params.platform: %T (should be string)", buildID, platformI)
+		}
+	}
+
+	cacheFromI, ok := params["cache-from"]
+	if ok {
+		result.cacheFrom, ok = cacheFromI.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.cache-from: %T (should be string)", buildID, cacheFromI)
+		}
+	}
+
+	cacheToI, ok := params["cache-to"]
+	if ok {
+		result.cacheTo, ok = cacheToI.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.cache-to: %T (should be string)", buildID, cacheToI)
+		}
+	}
+
+	if result.cacheFrom != "" {
+		if !strings.Contains(result.cacheFrom, "type=gha") {
+			return nil, fmt.Errorf("currently only gha cache type supported, got: %s", result.cacheFrom)
+		}
+	}
+
+	if result.cacheTo != "" {
+		if !strings.Contains(result.cacheTo, "type=gha") {
+			return nil, fmt.Errorf("currently only gha cache type supported, got: %s", result.cacheTo)
 		}
 	}
 
