@@ -20,6 +20,8 @@ type config struct {
 	context    string
 	buildx     bool
 	platform   string
+	cacheFrom  string
+	cacheTo    string
 }
 
 // Run runs the build process.
@@ -42,7 +44,10 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 	fmt.Fprintf(os.Stderr, "\n- Building docker image...\n\n")
 
 	if config.buildx {
-		buildWithBuildx(config, image, runner)
+		err := buildWithBuildx(config, image, runner)
+		if err != nil {
+			return "", err
+		}
 	} else {
 		build(config, image, runner)
 	}
@@ -59,7 +64,12 @@ func build(config *config, image string, runner CommandRunner) {
 	runner.Run("docker", "push", image)
 }
 
-func buildWithBuildx(config *config, image string, runner CommandRunner) {
+func buildWithBuildx(config *config, image string, runner CommandRunner) error {
+	err := checkBuildxConfig(config)
+	if err != nil {
+		return err
+	}
+
 	qemuInstallArgs := []string{"run", "--privileged", "--rm", "tonistiigi/binfmt", "--install", "all"}
 
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(qemuInstallArgs, " "))
@@ -74,10 +84,46 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) {
 	if config.platform != "" {
 		buildArgs = append(buildArgs, "--platform", config.platform)
 	}
+
+	if config.cacheFrom != "" {
+		buildArgs = append(buildArgs, "--cache-from", config.cacheFrom)
+	}
+
+	if config.cacheTo != "" {
+		buildArgs = append(buildArgs, "--cache-to", config.cacheTo)
+	}
+
 	buildArgs = append(buildArgs, "-f", config.dockerfile, "-t", image, config.context)
 
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(buildArgs, " "))
 	runner.Run("docker", buildArgs...)
+
+	return nil
+}
+
+func checkBuildxConfig(config *config) error {
+	if config.cacheFrom != "" {
+		if !strings.Contains(config.cacheFrom, "type=gha") {
+			return fmt.Errorf("currently only gha cache type supported, got: %s", config.cacheFrom)
+		}
+	}
+
+	if config.cacheTo != "" {
+		if !strings.Contains(config.cacheTo, "type=gha") {
+			return fmt.Errorf("currently only gha cache type supported, got: %s", config.cacheTo)
+		}
+	}
+
+	if config.cacheFrom != "" || config.cacheTo != "" {
+		url := os.Getenv("ACTIONS_CACHE_URL")
+		cache := os.Getenv("ACTIONS_RUNTIME_TOKEN")
+
+		if url == "" || cache == "" {
+			fmt.Fprintf(os.Stderr, "Github authentication parameter(s) missing, gha cache won't be used.\n\n")
+		}
+	}
+
+	return nil
 }
 
 func getConfig(buildID string, params map[string]interface{}) (*config, error) {
@@ -115,6 +161,22 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 		result.platform, ok = platformI.(string)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for build.%v.params.platform: %T (should be string)", buildID, platformI)
+		}
+	}
+
+	cacheFromI, ok := params["cache-from"]
+	if ok {
+		result.cacheFrom, ok = cacheFromI.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.cache-from: %T (should be string)", buildID, cacheFromI)
+		}
+	}
+
+	cacheToI, ok := params["cache-to"]
+	if ok {
+		result.cacheTo, ok = cacheToI.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.cache-to: %T (should be string)", buildID, cacheToI)
 		}
 	}
 
