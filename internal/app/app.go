@@ -11,8 +11,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/aws/aws-sdk-go/service/ecr/ecriface"
+	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api"
 	"github.com/docker/docker/registry"
+)
+
+const (
+	cdflowDockerAuthPrefix = "CDFLOW2_DOCKER_AUTH_"
 )
 
 type config struct {
@@ -215,21 +220,7 @@ func attemptToLoginToRegistriesInDockerFile(runner CommandRunner) {
 
 		matches := dockerfileFromLinePattern.FindStringSubmatch(line)
 		if matches != nil && matches[1] != api.NoBaseImageSpecifier {
-			imageRegistry := registry.IndexHostname
-			if strings.Count(matches[1], "/") > 1 {
-				imageRegistry = strings.Split(matches[1], "/")[0]
-			}
-			registryVarName := strings.ToUpper(
-				strings.NewReplacer(
-					".", "_",
-					":", "_",
-					"-", "_",
-				).Replace(imageRegistry),
-			)
-
-			cdflowDockerAuthPrefix := "CDFLOW2_DOCKER_AUTH_"
-			username := os.Getenv(cdflowDockerAuthPrefix + registryVarName + "_USERNAME")
-			password := os.Getenv(cdflowDockerAuthPrefix + registryVarName + "_PASSWORD")
+			username, password, imageRegistry := getRegistryAuth(matches[1])
 
 			if len(username) > 0 && len(password) > 0 {
 				fmt.Fprintf(os.Stderr, "- Found credentials for registry %s. Attempting to login...\n\n", imageRegistry)
@@ -241,4 +232,52 @@ func attemptToLoginToRegistriesInDockerFile(runner CommandRunner) {
 			}
 		}
 	}
+}
+
+func getRegistryAuth(image string) (username, password, imageRegistry string) {
+	username, password, imageRegistry, err := getRegistryCredentials(image)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to get registry credentials, fallback to legacy method: %v\n\n", err)
+	}
+
+	if username == "" || password == "" {
+		username, password, imageRegistry = getRegistryCredentialsLegacy(image)
+	}
+
+	return username, password, imageRegistry
+}
+
+func getRegistryCredentials(image string) (username, password, imageRegistry string, err error) {
+	named, err := reference.ParseNormalizedNamed(image)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	imageRegistry = reference.Domain(named)
+	registryEnv := strings.ToUpper(
+		strings.NewReplacer(
+			".", "_",
+			":", "_",
+			"-", "_",
+		).Replace(imageRegistry),
+	)
+
+	return os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_USERNAME"), os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_PASSWORD"), imageRegistry, nil
+}
+
+func getRegistryCredentialsLegacy(image string) (username, password, imageRegistry string) {
+	imageRegistry = registry.IndexHostname
+	if strings.Count(image, "/") > 1 {
+		imageRegistry = strings.Split(image, "/")[0]
+	}
+
+	registryEnv := strings.ToUpper(
+		strings.NewReplacer(
+			".", "_",
+			":", "_",
+			"-", "_",
+		).Replace(imageRegistry),
+	)
+
+	return os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_USERNAME"), os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_PASSWORD"), imageRegistry
 }
