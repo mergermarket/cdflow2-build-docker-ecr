@@ -3,6 +3,7 @@ WORKDIR ./app
 ADD . .
 ENV CGO_ENABLED=0
 ENV GOOS=windows
+RUN go mod download
 RUN go build -o app.exe ./cmd/app
 
 FROM mcr.microsoft.com/windows/nanoserver:ltsc2022
