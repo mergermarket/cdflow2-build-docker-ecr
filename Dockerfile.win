@@ -1,0 +1,13 @@
+FROM golang:nanoserver AS build
+WORKDIR ./app
+ADD . .
+ENV CGO_ENABLED=0
+ENV GOOS=windows
+RUN go build -o app.exe
+
+FROM mcr.microsoft.com/windows/nanoserver:ltsc2022
+COPY --from=build C:/go/app/app.exe app.exe
+
+LABEL type="platform"
+
+ENTRYPOINT ["app.exe"]
