@@ -1,21 +1,17 @@
 name: Publish to Docker Hub
 on:
-  workflow_run:
+  push:
     branches:
       - windows
-    workflows:
-      - Unit tests
-    types:
-      - completed
 
 env:
   IMAGE: mergermarket/cdflow2-build-docker-ecr
+  MANIFEST_TAG: cross
 
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
     name: Generate platform matrix
-    if: github.event.workflow_run.conclusion == 'success'
     outputs:
       matrix: ${{ steps.create-matrix.outputs.matrix }}
     steps:
@@ -52,7 +48,7 @@ jobs:
           target: ${{ matrix.target }}
           build-args: WINBASE=${{ ( matrix.base != '' && matrix.base ) || 'scratch' }}
           push: true
-          tags: ${{ env.IMAGE }}:${{ matrix.tag }}
+          tags: ${{ env.IMAGE }}:${{ env.MANIFEST_TAG }}-${{ matrix.tag }}
   
   create-manifest:
     runs-on: ubuntu-latest
@@ -70,5 +66,5 @@ jobs:
       
       - name: Create latest manifest and push
         run: |
-          docker manifest create ${{ env.IMAGE }}:cross $(jq -r '.include | map("${{ env.IMAGE }}:\(.tag)") | join(" ")' .github/manifest/matrix.json) 
-          docker manifest push ${{ env.IMAGE }}:cross
+          docker manifest create ${{ env.IMAGE }}:${{ env.MANIFEST_TAG }} $(jq -r '.include | map("${{ env.IMAGE }}:${{ env.MANIFEST_TAG }}-\(.tag)") | join(" ")' .github/manifest/matrix.json) 
+          docker manifest push ${{ env.IMAGE }}:${{ env.MANIFEST_TAG }}
