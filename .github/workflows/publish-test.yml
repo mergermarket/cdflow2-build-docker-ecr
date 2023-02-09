@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - windows
+    workflows:
+      - Unit tests
+    types:
+      - completed
 
 env:
   IMAGE: mergermarket/cdflow2-build-docker-ecr
@@ -11,6 +15,7 @@ jobs:
   generate-matrix:
     runs-on: ubuntu-latest
     name: Generate platform matrix
+    if: github.event.workflow_run.conclusion == 'success'
     outputs:
       matrix: ${{ steps.create-matrix.outputs.matrix }}
     steps:
