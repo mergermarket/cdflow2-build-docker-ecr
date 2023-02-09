@@ -1,18 +1,37 @@
 name: Publish to Docker Hub
-on: 
+on:
   workflow_run:
     branches:
-      - master
-    workflows: 
+      - windows
+    workflows:
       - Unit tests
     types:
       - completed
 
+env:
+  IMAGE: mergermarket/cdflow2-build-docker-ecr
+
 jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    name: Generate platform matrix
+    if: github.event.workflow_run.conclusion == 'success'
+    outputs:
+      matrix: ${{ steps.create-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Create matrix
+        id: create-matrix
+        run: echo "matrix=$(cat .github/manifest/matrix.json | jq -c .)" >> $GITHUB_OUTPUT
+  
   publish:
     runs-on: ubuntu-latest
-    name: Publish docker image
-    if: github.event.workflow_run.conclusion == 'success'
+    needs: [generate-matrix]
+    name: Publish (${{ matrix.tag }})
+    strategy:
+      matrix: ${{fromJSON(needs.generate-matrix.outputs.matrix)}}
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -29,5 +48,27 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
+          platforms: ${{ matrix.platform }}
+          target: ${{ matrix.target }}
+          build-args: WINBASE=${{ ( matrix.base != '' && matrix.base ) || 'scratch' }}
           push: true
-          tags: mergermarket/cdflow2-build-docker-ecr:latest
+          tags: ${{ env.IMAGE }}:${{ matrix.tag }}
+  
+  create-manifest:
+    runs-on: ubuntu-latest
+    name: Create manifest
+    needs: [publish]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      
+      - name: Create latest manifest and push
+        run: |
+          docker manifest create ${{ env.IMAGE }}:cross $(jq -r '.include | map("${{ env.IMAGE }}:\(.tag)") | join(" ")' .github/manifest/matrix.json) 
+          docker manifest push ${{ env.IMAGE }}:cross
