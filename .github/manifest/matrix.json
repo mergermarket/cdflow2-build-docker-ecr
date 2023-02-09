@@ -1,0 +1,38 @@
+{
+  "include": [
+    {
+      "target": "linux",
+      "platform": "linux/amd64",
+      "tag": "linux-amd64"
+    },
+    {
+      "target": "linux",
+      "platform": "linux/arm64",
+      "tag": "linux-arm64"
+    },
+    {
+      "target": "windows",
+      "platform": "windows/amd64",
+      "tag": "windows-amd64-2004",
+      "base": "mcr.microsoft.com/windows/nanoserver:2004"
+    },
+    {
+      "target": "windows",
+      "platform": "windows/amd64",
+      "tag": "windows-amd64-20H2",
+      "base": "mcr.microsoft.com/windows/nanoserver:20H2"
+    },
+    {
+      "target": "windows",
+      "platform": "windows/amd64",
+      "tag": "windows-amd64-ltsc2019",
+      "base": "mcr.microsoft.com/windows/nanoserver:ltsc2019"
+    },
+    {
+      "target": "windows",
+      "platform": "windows/amd64",
+      "tag": "windows-amd64-ltsc2022",
+      "base": "mcr.microsoft.com/windows/nanoserver:ltsc2022"
+    }
+  ]
+}

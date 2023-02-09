@@ -1,0 +1,70 @@
+name: Publish to Docker Hub
+on:
+  push:
+    branches:
+      - windows
+
+env:
+  IMAGE: mergermarket/cdflow2-build-docker-ecr
+  MANIFEST_TAG: cross
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    name: Generate platform matrix
+    outputs:
+      matrix: ${{ steps.create-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Create matrix
+        id: create-matrix
+        run: echo "matrix=$(cat .github/manifest/matrix.json | jq -c .)" >> $GITHUB_OUTPUT
+  
+  publish:
+    runs-on: ubuntu-latest
+    needs: [generate-matrix]
+    name: Publish (${{ matrix.tag }})
+    strategy:
+      matrix: ${{fromJSON(needs.generate-matrix.outputs.matrix)}}
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+          target: ${{ matrix.target }}
+          build-args: WINBASE=${{ ( matrix.base != '' && matrix.base ) || 'scratch' }}
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.MANIFEST_TAG }}-${{ matrix.tag }}
+  
+  create-manifest:
+    runs-on: ubuntu-latest
+    name: Create manifest
+    needs: [publish]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      
+      - name: Create latest manifest and push
+        run: |
+          docker manifest create ${{ env.IMAGE }}:${{ env.MANIFEST_TAG }} $(jq -r '.include | map("${{ env.IMAGE }}:${{ env.MANIFEST_TAG }}-\(.tag)") | join(" ")' .github/manifest/matrix.json) 
+          docker manifest push ${{ env.IMAGE }}:${{ env.MANIFEST_TAG }}
