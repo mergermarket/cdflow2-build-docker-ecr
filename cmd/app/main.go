@@ -17,7 +17,7 @@ func main() {
 		// requirements is a way for the release container to communciate its requirements to the
 		// config container
 		if err := json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
-			"needs": []string{"ecr"},
+			"needs": []string{"ecr", "gha"},
 		}); err != nil {
 			log.Panicln("error encoding requirements:", err)
 		}
