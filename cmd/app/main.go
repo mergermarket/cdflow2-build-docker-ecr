@@ -35,7 +35,7 @@ func main() {
 		log.Fatalln("error loading MANIFEST_PARAMS:", err)
 	}
 
-	image, err := app.Run(
+	result, err := app.Run(
 		ecr.New(session.Must(session.NewSession())),
 		&app.ExecCommandRunner{OutputStream: os.Stdout, ErrorStream: os.Stderr},
 		params,
@@ -47,11 +47,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	data, err := json.Marshal(map[string]string{"image": image})
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := ioutil.WriteFile("/release-metadata.json", data, 0644); err != nil {
+	if err := ioutil.WriteFile("/release-metadata.json", []byte(result), 0644); err != nil {
 		log.Fatalln("error writing release metadata:", err)
 	}
 }

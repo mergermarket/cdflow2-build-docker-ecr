@@ -3,10 +3,12 @@ package app
 import (
 	"bufio"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecr"
@@ -57,7 +59,15 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 		build(config, image, runner)
 	}
 
-	return image, nil
+	data, err := json.Marshal(map[string]string{
+		"image":    image,
+		"buildx":   strconv.FormatBool(config.buildx),
+		"platform": config.platform})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return string(data), nil
 }
 
 func build(config *config, image string, runner CommandRunner) {
