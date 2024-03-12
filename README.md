@@ -62,7 +62,7 @@ Use buildx for image creation with multi architecture support instead of the cla
 Boolean parameter.  
 Defaults to `false`.
 
-#### platforms
+#### platform
 
 Comma-separated list of platforms for the build, when buildx is enabled.  
 E.g.: `linux/arm64,linux/386,linux/s390x`.  
@@ -84,7 +84,7 @@ Defaults to empty string.
     image: mergermarket/cdflow2-build-docker-ecr:latest
     params:
       buildx: true
-      platforms: linux/arm64,linux/386
+      platform: linux/arm64,linux/386
       cache-from: type=gha
       cache-to: type=gha,mode=max
 ```
@@ -102,7 +102,7 @@ Defaults to empty string.
     image: mergermarket/cdflow2-build-docker-ecr:latest
     params:
       buildx: true
-      platforms: linux/arm64,linux/386
+      platform: linux/arm64,linux/386
       cache-from: type=gha
       cache-to: type=gha,mode=max
 ```

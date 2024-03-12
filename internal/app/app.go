@@ -26,7 +26,7 @@ type config struct {
 	dockerfile string
 	context    string
 	buildx     bool
-	platforms  string
+	platform   string
 	cacheFrom  string
 	cacheTo    string
 }
@@ -60,9 +60,9 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 	}
 
 	data, err := json.Marshal(map[string]string{
-		"image":     image,
-		"buildx":    strconv.FormatBool(config.buildx),
-		"platforms": config.platforms})
+		"image":    image,
+		"buildx":   strconv.FormatBool(config.buildx),
+		"platform": config.platform})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -96,8 +96,8 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 	runner.Run("docker", builderCreateArgs...)
 
 	buildArgs := []string{"buildx", "build", "--push"}
-	if config.platforms != "" {
-		buildArgs = append(buildArgs, "--platform", config.platforms)
+	if config.platform != "" {
+		buildArgs = append(buildArgs, "--platform", config.platform)
 	}
 
 	if config.cacheFrom != "" {
@@ -171,11 +171,11 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 		}
 	}
 
-	platformsI, ok := params["platforms"]
+	platformI, ok := params["platform"]
 	if ok {
-		result.platforms, ok = platformsI.(string)
+		result.platform, ok = platformI.(string)
 		if !ok {
-			return nil, fmt.Errorf("unexpected type for build.%v.params.platforms: %T (should be string)", buildID, platformsI)
+			return nil, fmt.Errorf("unexpected type for build.%v.params.platform: %T (should be string)", buildID, platformI)
 		}
 	}
 

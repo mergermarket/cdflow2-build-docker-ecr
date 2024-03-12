@@ -94,8 +94,8 @@ func TestBuildxRun(t *testing.T) {
 	commandRunner := &mockCommandRunner{}
 
 	params := map[string]interface{}{
-		"buildx":    true,
-		"platforms": "linux/arm64,linux/386,linux/s390x",
+		"buildx":   true,
+		"platform": "linux/arm64,linux/386,linux/s390x",
 	}
 
 	// When
