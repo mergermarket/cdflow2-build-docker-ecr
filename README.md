@@ -62,7 +62,7 @@ Use buildx for image creation with multi architecture support instead of the cla
 Boolean parameter.  
 Defaults to `false`.
 
-#### platform
+#### platforms
 
 Comma-separated list of platforms for the build, when buildx is enabled.  
 E.g.: `linux/arm64,linux/386,linux/s390x`.  
