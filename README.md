@@ -84,7 +84,7 @@ Defaults to empty string.
     image: mergermarket/cdflow2-build-docker-ecr:latest
     params:
       buildx: true
-      platform: linux/arm64,linux/386
+      platforms: linux/arm64,linux/386
       cache-from: type=gha
       cache-to: type=gha,mode=max
 ```
@@ -102,7 +102,7 @@ Defaults to empty string.
     image: mergermarket/cdflow2-build-docker-ecr:latest
     params:
       buildx: true
-      platform: linux/arm64,linux/386
+      platforms: linux/arm64,linux/386
       cache-from: type=gha
       cache-to: type=gha,mode=max
 ```
