@@ -29,6 +29,7 @@ type config struct {
 	platforms  string
 	cacheFrom  string
 	cacheTo    string
+	secrets    []string
 }
 
 // Run runs the build process.
@@ -71,8 +72,13 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 }
 
 func build(config *config, image string, runner CommandRunner) {
-	fmt.Fprintf(os.Stderr, "$ docker build -f %s -t %s %s\n\n", config.dockerfile, image, config.context)
-	runner.Run("docker", "build", "-f", config.dockerfile, "-t", image, config.context)
+	buildArgs := []string{"build", "-f", config.dockerfile, "-t", image}
+	for _, secret := range config.secrets {
+		buildArgs = append(buildArgs, "--secret", secret)
+	}
+	buildArgs = append(buildArgs, config.context)
+	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(buildArgs, " "))
+	runner.Run("docker", buildArgs...)
 
 	fmt.Fprintf(os.Stderr, "\n- Pushing docker image...\n\n")
 	fmt.Fprintf(os.Stderr, "$ docker push %s\n\n", image)
@@ -106,6 +112,9 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 
 	if config.cacheTo != "" {
 		buildArgs = append(buildArgs, "--cache-to", config.cacheTo)
+	}
+	for _, secret := range config.secrets {
+		buildArgs = append(buildArgs, "--secret", secret)
 	}
 
 	buildArgs = append(buildArgs, "-f", config.dockerfile, "-t", image, config.context)
@@ -192,6 +201,15 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 		result.cacheTo, ok = cacheToI.(string)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for build.%v.params.cache-to: %T (should be string)", buildID, cacheToI)
+		}
+	}
+	secrets, ok := params["secrets"]
+	if ok {
+		for _, secret := range secrets.([]interface{}) {
+			result.secrets = append(result.secrets, secret.(string))
+		}
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for build.%v.params.secrets: %T (should be []string)", buildID, secrets)
 		}
 	}
 

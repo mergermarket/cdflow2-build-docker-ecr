@@ -31,7 +31,10 @@ builds:
     image: mergermarket/cdflow2-build-docker-ecr
     params:
       dockerfile: Dockerfile
-      context: .
+      context: = .
+      secrets:
+        - "id=npmrc,src=.npmrc"
+        - "id=ssh,src=/root/.ssh/id_rsa.pub"
 terraform:
   image: hashicorp/terraform
 ```
@@ -77,7 +80,7 @@ Import docker layer cache from specific source.
 Currently only "gha" supported.  
 For supported options check: https://docs.docker.com/engine/reference/commandline/buildx_build/#cache-from.  
 If buildx not enabled, parameter ignored.  
-Defaults to empty string.  
+Defaults to empty string.
 
 ```yaml
   buildx:
@@ -105,6 +108,31 @@ Defaults to empty string.
       platforms: linux/arm64,linux/386
       cache-from: type=gha
       cache-to: type=gha,mode=max
+```
+
+#### secrets
+
+Allow passing secrets to the docker build.
+Secrets are passed as a list of strings.
+Each string should be in the format
+`id=<secret_id>,src=<secret_src>`
+
+`<secret_id>` is the name of the secret that will be used in
+the docker build context.
+
+`<secret_src>` is the path to the secret file on the host machine.
+
+limitation: It is only possible to pass src files, env is not available for cdflow2-build-docker-ecr plugin, as it runs in a separate container.
+
+```yaml
+  buildx:
+    image: mergermarket/cdflow2-build-docker-ecr:latest
+    params:
+      dockerfile: Dockerfile
+      context: = .
+      secrets:
+        - "id=npmrc,src=.npmrc"
+        - "id=ssh,src=/root/.ssh/id_rsa.pub"
 ```
 
 ## Config container support
