@@ -92,6 +92,24 @@ Defaults to empty string.
       cache-to: type=gha,mode=max
 ```
 
+#### cache-to
+
+Export docker layer to specific destination.  
+Currently only "gha" supported.  
+For supported options check: https://docs.docker.com/engine/reference/commandline/buildx_build/#cache-from.  
+If buildx not enabled, parameter ignored.  
+Defaults to empty string.  
+
+```yaml
+  buildx:
+    image: mergermarket/cdflow2-build-docker-ecr:latest
+    params:
+      buildx: true
+      platforms: linux/arm64,linux/386
+      cache-from: type=gha
+      cache-to: type=gha,mode=max
+```
+
 #### secrets
 
 Allow passing secrets to the docker build.
@@ -115,24 +133,6 @@ limitation: It is only possible to pass src files, env is not available for cdfl
       secrets:
         - "id=npmrc,src=.npmrc"
         - "id=ssh,src=/root/.ssh/id_rsa.pub"
-```
-
-#### cache-to
-
-Export docker layer to specific destination.  
-Currently only "gha" supported.  
-For supported options check: https://docs.docker.com/engine/reference/commandline/buildx_build/#cache-from.  
-If buildx not enabled, parameter ignored.  
-Defaults to empty string.  
-
-```yaml
-  buildx:
-    image: mergermarket/cdflow2-build-docker-ecr:latest
-    params:
-      buildx: true
-      platforms: linux/arm64,linux/386
-      cache-from: type=gha
-      cache-to: type=gha,mode=max
 ```
 
 ## Config container support
