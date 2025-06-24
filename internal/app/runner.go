@@ -44,6 +44,7 @@ func (runner *ExecCommandRunner) RunWithInput(input string, command string, args
 	cmd.Stdout = runner.OutputStream
 	cmd.Stderr = runner.ErrorStream
 	if err := cmd.Run(); err != nil {
-		os.Exit(1)
+		log.Fatal(err)
+		//os.Exit(1)
 	}
 }
