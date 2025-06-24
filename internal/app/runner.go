@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 // CommandRunner is something that can run commands.
@@ -25,11 +24,8 @@ func (runner *ExecCommandRunner) Run(command string, args ...string) {
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = runner.OutputStream
 	cmd.Stderr = runner.ErrorStream
-	err := cmd.Run()
-	if err != nil {
-		if strings.Contains(err.Error(), "exit status 1") {
-			return
-		}
+	e := cmd.Run()
+	if e != nil {
 		os.Exit(1)
 	}
 }
