@@ -28,10 +28,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.CAPPLATFORM_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Login AWS ECR
-        uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: public
+      # - name: Login AWS ECR
+      #   uses: aws-actions/amazon-ecr-login@v2
+      #   with:
+      #     registry-type: public
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -46,4 +46,4 @@ jobs:
           platforms: linux/arm64,linux/amd64
           tags: |
             mergermarket/cdflow2-build-docker-ecr:latest
-            public.ecr.aws/p7e3d1i3/cdflow2-build-docker-ecr:latest
+          # public.ecr.aws/p7e3d1i3/cdflow2-build-docker-ecr:latest
