@@ -2,9 +2,10 @@ package app
 
 import (
 	"io"
-	"os/exec"
-	"os"
 	"log"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 // CommandRunner is something that can run commands.
@@ -14,9 +15,9 @@ type CommandRunner interface {
 }
 
 // ExecCommandRunner implements the CommandRunner interface using exec.Command.
-type ExecCommandRunner struct{
+type ExecCommandRunner struct {
 	OutputStream io.Writer
-	ErrorStream io.Writer
+	ErrorStream  io.Writer
 }
 
 // Run runs a simple command.
@@ -24,8 +25,11 @@ func (runner *ExecCommandRunner) Run(command string, args ...string) {
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = runner.OutputStream
 	cmd.Stderr = runner.ErrorStream
-	e := cmd.Run()
-	if e != nil {
+	err := cmd.Run()
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 1") {
+			return
+		}
 		os.Exit(1)
 	}
 }

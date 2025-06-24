@@ -101,7 +101,7 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(builderCreateArgs, " "))
 	runner.Run("docker", builderCreateArgs...)
 
-	buildArgs := []string{"buildx", "build", "--push"}
+	buildArgs := []string{"buildx", "build", "--load", "--push"}
 	if config.platforms != "" {
 		buildArgs = append(buildArgs, "--platform", config.platforms)
 	}
