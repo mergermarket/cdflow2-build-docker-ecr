@@ -102,6 +102,11 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 	runner.Run("docker", builderCreateArgs...)
 
 	buildArgs := []string{"buildx", "build", "--push"}
+
+	if isContainerdAvailable, _ := checkContainerdImageStoreDriver(runner); isContainerdAvailable {
+		buildArgs = append(buildArgs, "--load")
+	}
+
 	if config.platforms != "" {
 		buildArgs = append(buildArgs, "--platform", config.platforms)
 	}
@@ -148,6 +153,19 @@ func checkBuildxConfig(config *config) error {
 	}
 
 	return nil
+}
+
+func checkContainerdImageStoreDriver(runner CommandRunner) (bool, error) {
+
+	output, err := runner.RunWithOutput("docker", "info", "-f", "{{.DriverStatus}}")
+	if err != nil {
+		return false, fmt.Errorf("error running docker info: %s", err)
+	}
+	if strings.Contains(output, "io.containerd.snapshotter.v1") {
+		fmt.Fprintf(os.Stdout, "Containerd image store driver detected.\n")
+		return true, nil
+	}
+	return false, nil
 }
 
 func getConfig(buildID string, params map[string]interface{}) (*config, error) {

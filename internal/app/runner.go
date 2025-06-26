@@ -5,12 +5,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // CommandRunner is something that can run commands.
 type CommandRunner interface {
 	Run(command string, args ...string)
 	RunWithInput(input, command string, args ...string)
+	RunWithOutput(command string, args ...string) (string, error)
 }
 
 // ExecCommandRunner implements the CommandRunner interface using exec.Command.
@@ -47,4 +49,15 @@ func (runner *ExecCommandRunner) RunWithInput(input string, command string, args
 		log.Fatal(err)
 		os.Exit(1)
 	}
+}
+
+func (runner *ExecCommandRunner) RunWithOutput(command string, args ...string) (string, error) {
+	outputBuffer := &strings.Builder{}
+	cmd := exec.Command(command, args...)
+	cmd.Stdout = outputBuffer
+	cmd.Stderr = runner.ErrorStream
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	return outputBuffer.String(), nil
 }
