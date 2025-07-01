@@ -61,8 +61,10 @@ func TestRun(t *testing.T) {
 	// Then
 	if !reflect.DeepEqual(commandRunner.commands, []called{
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
-		{command: "docker", args: []string{"build", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
-		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
+		{command: "docker", args: []string{"run", "--privileged", "--rm", "tonistiigi/binfmt", "--install", "all"}},
+		{command: "docker", args: []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}},
+		{command: "docker", args: []string{"info", "-f", "{{.DriverStatus}}"}},
+		{command: "docker", args: []string{"buildx", "build", "--push", "--load", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}
@@ -75,6 +77,7 @@ func TestRunWithParams(t *testing.T) {
 	commandRunner := &mockCommandRunner{}
 
 	params := map[string]interface{}{
+		"buildx":     false,
 		"dockerfile": "test1.Dockerfile",
 		"context":    "./test",
 	}
