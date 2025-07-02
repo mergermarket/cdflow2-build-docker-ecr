@@ -35,7 +35,6 @@ type config struct {
 // Run runs the build process.
 func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]interface{}, repository, buildID, version string) (string, error) {
 	config, err := getConfig(buildID, params)
-
 	if err != nil {
 		return "", fmt.Errorf("error getting config: %w", err)
 	}
@@ -171,7 +170,6 @@ func checkContainerdImageStoreDriver(runner CommandRunner) (bool, error) {
 
 func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 	result := config{
-		buildx:     true, // default to buildx
 		dockerfile: "Dockerfile",
 		context:    ".",
 	}
@@ -191,6 +189,7 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 			return nil, fmt.Errorf("unexpected type for build.%v.params.context: %T (should be string)", buildID, contextI)
 		}
 	}
+
 	buildxI, ok := params["buildx"]
 	if ok {
 		result.buildx, ok = buildxI.(bool)
