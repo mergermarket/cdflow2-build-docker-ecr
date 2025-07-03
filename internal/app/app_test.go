@@ -63,6 +63,7 @@ func TestRun(t *testing.T) {
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
 		{command: "docker", args: []string{"build", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
 		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
+		{command: "trivy", args: []string{"image", "--exit-code", "1", "--severity", "CRITICAL", "--ignore-unfixed", "--scanners", "vuln,misconfig,secret", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}
@@ -87,6 +88,7 @@ func TestRunWithParams(t *testing.T) {
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
 		{command: "docker", args: []string{"build", "-f", "test1.Dockerfile", "-t", "test-repository:test-build-id-test-version", "./test"}},
 		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
+		{command: "trivy", args: []string{"image", "--exit-code", "1", "--severity", "CRITICAL", "--ignore-unfixed", "--scanners", "vuln,misconfig,secret", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}
@@ -112,6 +114,7 @@ func TestBuildxRun(t *testing.T) {
 		{command: "docker", args: []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}},
 		{command: "docker", args: []string{"info", "-f", "{{.DriverStatus}}"}},
 		{command: "docker", args: []string{"buildx", "build", "--push", "--load", "--platform", "linux/arm64,linux/386,linux/s390x", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
+		{command: "trivy", args: []string{"image", "--exit-code", "1", "--severity", "CRITICAL", "--ignore-unfixed", "--scanners", "vuln,misconfig,secret", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}
