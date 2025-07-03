@@ -20,6 +20,7 @@ import (
 
 const (
 	cdflowDockerAuthPrefix = "CDFLOW2_DOCKER_AUTH_"
+	configErrorOnFindings  = "errorOnFindings"
 )
 
 type config struct {
@@ -30,6 +31,9 @@ type config struct {
 	cacheFrom  string
 	cacheTo    string
 	secrets    []string
+	/// trivy part needs to be removed when
+	// docker buildx and containerd image store are default in docker engine
+	errorOnFindings bool
 }
 
 // Run runs the build process.
@@ -48,7 +52,7 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 
 	image := repository + ":" + buildID + "-" + version
 
-	attemptToLoginToRegistriesInDockerFile(runner)
+	attemptToLoginToRegistriesInDockerFile(runner, config)
 	fmt.Fprintf(os.Stderr, "\n- Building docker image...\n\n")
 
 	if config.buildx {
@@ -66,7 +70,7 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 	fmt.Fprintf(os.Stderr, "\n- Running trivy image...\n\n")
 	runner.Run(
 		"trivy", "image",
-		"--exit-code", "1",
+		"--exit-code", setExitCode(config),
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
 		"--scanners", "vuln,misconfig,secret",
@@ -243,6 +247,16 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 		}
 	}
 
+	/// trivy part needs to be removed when
+	// docker buildx and containerd image store are default in docker engine
+	if errorOnFindingsI, ok := params[configErrorOnFindings]; ok {
+		if result.errorOnFindings, ok = errorOnFindingsI.(bool); !ok {
+			result.errorOnFindings = true
+		}
+	} else {
+		result.errorOnFindings = true // default value
+	}
+
 	return &result, nil
 }
 
@@ -260,13 +274,13 @@ func getCredentials(ecrClient ecriface.ECRAPI) (string, string) {
 	return credentials[0], credentials[1]
 }
 
-func attemptToLoginToRegistriesInDockerFile(runner CommandRunner) {
+func attemptToLoginToRegistriesInDockerFile(runner CommandRunner, config *config) {
 	dockerfileFromLinePattern := regexp.MustCompile(`(?i)^[\s]*FROM[ \f\r\t\v]+(?P<image>[^ \f\r\t\v\n#]+)`)
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
-	dockerfile, err := os.Open(cwd + "/Dockerfile")
+	dockerfile, err := os.Open(cwd + "/" + config.dockerfile)
 	if err != nil {
 		log.Print(err)
 		return
@@ -338,4 +352,13 @@ func getRegistryCredentialsLegacy(image string) (username, password, imageRegist
 	)
 
 	return os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_USERNAME"), os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_PASSWORD"), imageRegistry
+}
+
+// / trivy part needs to be removed when
+// docker buildx and containerd image store are default in docker engine
+func setExitCode(config *config) string {
+	if config.errorOnFindings {
+		return "1"
+	}
+	return "0"
 }
