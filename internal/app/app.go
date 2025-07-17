@@ -251,10 +251,10 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 	// docker buildx and containerd image store are default in docker engine
 	if errorOnFindingsI, ok := params[configErrorOnFindings]; ok {
 		if result.errorOnFindings, ok = errorOnFindingsI.(bool); !ok {
-			result.errorOnFindings = true
+			result.errorOnFindings = false // default value
 		}
 	} else {
-		result.errorOnFindings = true // default value
+		result.errorOnFindings = false // default value
 	}
 
 	return &result, nil
