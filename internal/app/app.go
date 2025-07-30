@@ -68,20 +68,24 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 	// should be removed when
 	//docker buildx and containerd image store are default in docker engine
 	fmt.Fprintf(os.Stderr, "\n- Running trivy image...\n\n")
-	runner.Run(
+	result, err := runner.RunWithOutput(
 		"trivy", "image",
 		"--exit-code", setExitCode(config),
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
 		"--scanners", "vuln,misconfig,secret",
 		image)
+	if err != nil {
+		log.Printf("error running trivy image: %s", err)
+	}
+	println(result)
 
 	data, err := json.Marshal(map[string]string{
 		"image":     image,
 		"buildx":    strconv.FormatBool(config.buildx),
 		"platforms": config.platforms})
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error marshalling build result: %s", err)
 	}
 
 	return string(data), nil
