@@ -20,7 +20,7 @@ type mockECRClient struct {
 func (mock *mockECRClient) GetAuthorizationToken(input *ecr.GetAuthorizationTokenInput) (*ecr.GetAuthorizationTokenOutput, error) {
 	return &ecr.GetAuthorizationTokenOutput{
 		AuthorizationData: []*ecr.AuthorizationData{
-			&ecr.AuthorizationData{AuthorizationToken: aws.String(base64.StdEncoding.EncodeToString([]byte("test-username:test-password")))},
+			{AuthorizationToken: aws.String(base64.StdEncoding.EncodeToString([]byte("test-username:test-password")))},
 		},
 	}, nil
 }
@@ -63,7 +63,6 @@ func TestRun(t *testing.T) {
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
 		{command: "docker", args: []string{"build", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
 		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
-		{command: "trivy", args: []string{"image", "--exit-code", "0", "--severity", "CRITICAL", "--ignore-unfixed", "--scanners", "vuln,misconfig,secret", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}
@@ -88,7 +87,6 @@ func TestRunWithParams(t *testing.T) {
 		{command: "docker", args: []string{"login", "-u", "test-username", "--password-stdin", "test-repository"}, input: "test-password"},
 		{command: "docker", args: []string{"build", "-f", "test1.Dockerfile", "-t", "test-repository:test-build-id-test-version", "./test"}},
 		{command: "docker", args: []string{"push", "test-repository:test-build-id-test-version"}},
-		{command: "trivy", args: []string{"image", "--exit-code", "0", "--severity", "CRITICAL", "--ignore-unfixed", "--scanners", "vuln,misconfig,secret", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}
@@ -114,7 +112,6 @@ func TestBuildxRun(t *testing.T) {
 		{command: "docker", args: []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}},
 		{command: "docker", args: []string{"info", "-f", "{{.DriverStatus}}"}},
 		{command: "docker", args: []string{"buildx", "build", "--push", "--load", "--platform", "linux/arm64,linux/386,linux/s390x", "-f", "Dockerfile", "-t", "test-repository:test-build-id-test-version", "."}},
-		{command: "trivy", args: []string{"image", "--exit-code", "0", "--severity", "CRITICAL", "--ignore-unfixed", "--scanners", "vuln,misconfig,secret", "test-repository:test-build-id-test-version"}},
 	}) {
 		log.Fatal("unexpected commands:", commandRunner.commands)
 	}

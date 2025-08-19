@@ -31,9 +31,6 @@ type config struct {
 	cacheFrom  string
 	cacheTo    string
 	secrets    []string
-	/// trivy part needs to be removed when
-	// docker buildx and containerd image store are default in docker engine
-	errorOnFindings bool
 }
 
 // Run runs the build process.
@@ -64,26 +61,11 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 		build(config, image, runner)
 	}
 
-	//workarround for trivy image scanning
-	// should be removed when
-	//docker buildx and containerd image store are default in docker engine
-	fmt.Fprintf(os.Stderr, "\n- Running trivy image...\n\n")
-	result, err := runner.RunWithOutput(
-		"trivy", "image",
-		"--exit-code", setExitCode(config),
-		"--severity", "CRITICAL",
-		"--ignore-unfixed",
-		"--scanners", "vuln,misconfig,secret",
-		image)
-	if err != nil {
-		log.Printf("error running trivy image: %s", err)
-	}
-	println(result)
-
 	data, err := json.Marshal(map[string]string{
 		"image":     image,
 		"buildx":    strconv.FormatBool(config.buildx),
-		"platforms": config.platforms})
+		"platforms": config.platforms,
+	})
 	if err != nil {
 		log.Printf("error marshalling build result: %s", err)
 	}
@@ -123,7 +105,8 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 
 	buildArgs := []string{"buildx", "build", "--push"}
 
-	if isContainerdAvailable, _ := checkContainerdImageStoreDriver(runner); isContainerdAvailable {
+	isContainerdAvailable, _ := checkContainerdImageStoreDriver(runner)
+	if isContainerdAvailable {
 		buildArgs = append(buildArgs, "--load")
 	}
 
@@ -146,6 +129,12 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(buildArgs, " "))
 	runner.Run("docker", buildArgs...)
+
+	// Pull image in case it was not loaded from the build, it is requried for trivy scanning
+	if !isContainerdAvailable {
+		fmt.Fprintf(os.Stderr, "Pulling image %s to local docker daemon...\n\n", image)
+		runner.Run("docker", "pull", image)
+	}
 
 	return nil
 }
@@ -251,16 +240,6 @@ func getConfig(buildID string, params map[string]interface{}) (*config, error) {
 		}
 	}
 
-	/// trivy part needs to be removed when
-	// docker buildx and containerd image store are default in docker engine
-	if errorOnFindingsI, ok := params[configErrorOnFindings]; ok {
-		if result.errorOnFindings, ok = errorOnFindingsI.(bool); !ok {
-			result.errorOnFindings = false // default value
-		}
-	} else {
-		result.errorOnFindings = false // default value
-	}
-
 	return &result, nil
 }
 
@@ -356,13 +335,4 @@ func getRegistryCredentialsLegacy(image string) (username, password, imageRegist
 	)
 
 	return os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_USERNAME"), os.Getenv(cdflowDockerAuthPrefix + registryEnv + "_PASSWORD"), imageRegistry
-}
-
-// / trivy part needs to be removed when
-// docker buildx and containerd image store are default in docker engine
-func setExitCode(config *config) string {
-	if config.errorOnFindings {
-		return "1"
-	}
-	return "0"
 }
