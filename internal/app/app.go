@@ -141,12 +141,9 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 
 func createBuilderCommand() []string {
 	command := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
-
 	fi, err := os.Stat("/etc/buildkit/buildkit.toml")
-	if err == nil {
-		if fi.Mode().IsRegular() {
-			command = append(command, "--config", "/etc/buildkit/buildkit.toml")
-		}
+	if err == nil && fi.Mode().IsRegular() {
+		command = append(command, "--config", "/etc/buildkit/buildkit.toml")
 	}
 	return command
 }
@@ -177,7 +174,6 @@ func checkBuildxConfig(config *config) error {
 }
 
 func checkContainerdImageStoreDriver(runner CommandRunner) (bool, error) {
-
 	output, err := runner.RunWithOutput("docker", "info", "-f", "{{.DriverStatus}}")
 	if err != nil {
 		return false, fmt.Errorf("error running docker info: %s", err)
