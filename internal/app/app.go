@@ -142,7 +142,7 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 func createBuilderCommand() []string {
 	command := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
 	fi, err := os.Stat("/etc/buildkit/buildkit.toml")
-	if err == nil && fi.Mode().IsRegular() {
+	if err == nil && !fi.Mode().IsDir() {
 		command = append(command, "--config", "/etc/buildkit/buildkit.toml")
 	}
 	return command
