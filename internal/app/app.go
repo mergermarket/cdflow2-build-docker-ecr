@@ -98,7 +98,7 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(qemuInstallArgs, " "))
 	runner.Run("docker", qemuInstallArgs...)
 
-	builderCreateArgs := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
+	builderCreateArgs := createBuilderCommand()
 
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(builderCreateArgs, " "))
 	runner.Run("docker", builderCreateArgs...)
@@ -139,6 +139,15 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 	return nil
 }
 
+func createBuilderCommand() []string {
+	command := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
+	fi, err := os.Stat("/etc/buildkit/buildkit.toml")
+	if err == nil && fi.Mode().IsRegular() {
+		command = append(command, "--config", "/etc/buildkit/buildkit.toml")
+	}
+	return command
+}
+
 func checkBuildxConfig(config *config) error {
 	if config.cacheFrom != "" {
 		if !strings.Contains(config.cacheFrom, "type=gha") {
@@ -165,7 +174,6 @@ func checkBuildxConfig(config *config) error {
 }
 
 func checkContainerdImageStoreDriver(runner CommandRunner) (bool, error) {
-
 	output, err := runner.RunWithOutput("docker", "info", "-f", "{{.DriverStatus}}")
 	if err != nil {
 		return false, fmt.Errorf("error running docker info: %s", err)
