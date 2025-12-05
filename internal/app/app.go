@@ -143,7 +143,7 @@ func createBuilderCommand() []string {
 	command := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
 	fi, err := os.Stat("/etc/buildkit/buildkitd.toml")
 	if err == nil && !fi.Mode().IsDir() {
-		command = append(command, "--config", "/etc/buildkit/buildkitd.toml")
+		command = append(command, "--buildkitd-config", "/etc/buildkit/buildkitd.toml")
 	}
 	return command
 }
