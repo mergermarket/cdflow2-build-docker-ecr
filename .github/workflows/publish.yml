@@ -48,6 +48,6 @@ jobs:
           push: true
           platforms: linux/arm64,linux/amd64
           tags: |
-            mergermarket/cdflow2-build-docker-ecr:latest
             mergermarket/cdflow2-build-docker-ecr:${{ env.TAG }}
+            mergermarket/cdflow2-build-docker-ecr:latest
           # public.ecr.aws/p7e3d1i3/cdflow2-build-docker-ecr:latest
