@@ -20,6 +20,7 @@ import (
 
 const (
 	cdflowDockerAuthPrefix = "CDFLOW2_DOCKER_AUTH_"
+	configErrorOnFindings  = "errorOnFindings"
 )
 
 type config struct {
@@ -48,7 +49,7 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 
 	image := repository + ":" + buildID + "-" + version
 
-	attemptToLoginToRegistriesInDockerFile(runner)
+	attemptToLoginToRegistriesInDockerFile(runner, config)
 	fmt.Fprintf(os.Stderr, "\n- Building docker image...\n\n")
 
 	if config.buildx {
@@ -63,9 +64,10 @@ func Run(ecrClient ecriface.ECRAPI, runner CommandRunner, params map[string]inte
 	data, err := json.Marshal(map[string]string{
 		"image":     image,
 		"buildx":    strconv.FormatBool(config.buildx),
-		"platforms": config.platforms})
+		"platforms": config.platforms,
+	})
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error marshalling build result: %s", err)
 	}
 
 	return string(data), nil
@@ -96,12 +98,18 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(qemuInstallArgs, " "))
 	runner.Run("docker", qemuInstallArgs...)
 
-	builderCreateArgs := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
+	builderCreateArgs := createBuilderCommand()
 
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(builderCreateArgs, " "))
 	runner.Run("docker", builderCreateArgs...)
 
-	buildArgs := []string{"buildx", "build", "--load", "--push"}
+	buildArgs := []string{"buildx", "build", "--push"}
+
+	isContainerdAvailable, _ := checkContainerdImageStoreDriver(runner)
+	if isContainerdAvailable {
+		buildArgs = append(buildArgs, "--load")
+	}
+
 	if config.platforms != "" {
 		buildArgs = append(buildArgs, "--platform", config.platforms)
 	}
@@ -122,7 +130,22 @@ func buildWithBuildx(config *config, image string, runner CommandRunner) error {
 	fmt.Fprintf(os.Stderr, "$ docker %s\n\n", strings.Join(buildArgs, " "))
 	runner.Run("docker", buildArgs...)
 
+	// Pull image in case it was not loaded from the build, it is requried for trivy scanning
+	if !isContainerdAvailable {
+		fmt.Fprintf(os.Stderr, "Pulling image %s to local docker daemon...\n\n", image)
+		runner.Run("docker", "pull", image)
+	}
+
 	return nil
+}
+
+func createBuilderCommand() []string {
+	command := []string{"buildx", "create", "--bootstrap", "--use", "--name", "container", "--driver", "docker-container"}
+	fi, err := os.Stat("/etc/buildkit/buildkitd.toml")
+	if err == nil && !fi.Mode().IsDir() {
+		command = append(command, "--buildkitd-config", "/etc/buildkit/buildkitd.toml")
+	}
+	return command
 }
 
 func checkBuildxConfig(config *config) error {
@@ -148,6 +171,18 @@ func checkBuildxConfig(config *config) error {
 	}
 
 	return nil
+}
+
+func checkContainerdImageStoreDriver(runner CommandRunner) (bool, error) {
+	output, err := runner.RunWithOutput("docker", "info", "-f", "{{.DriverStatus}}")
+	if err != nil {
+		return false, fmt.Errorf("error running docker info: %s", err)
+	}
+	if strings.Contains(output, "io.containerd.snapshotter.v1") {
+		fmt.Fprintf(os.Stdout, "Containerd image store driver detected.\n")
+		return true, nil
+	}
+	return false, nil
 }
 
 func getConfig(buildID string, params map[string]interface{}) (*config, error) {
@@ -230,13 +265,13 @@ func getCredentials(ecrClient ecriface.ECRAPI) (string, string) {
 	return credentials[0], credentials[1]
 }
 
-func attemptToLoginToRegistriesInDockerFile(runner CommandRunner) {
+func attemptToLoginToRegistriesInDockerFile(runner CommandRunner, config *config) {
 	dockerfileFromLinePattern := regexp.MustCompile(`(?i)^[\s]*FROM[ \f\r\t\v]+(?P<image>[^ \f\r\t\v\n#]+)`)
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
-	dockerfile, err := os.Open(cwd + "/Dockerfile")
+	dockerfile, err := os.Open(cwd + "/" + config.dockerfile)
 	if err != nil {
 		log.Print(err)
 		return

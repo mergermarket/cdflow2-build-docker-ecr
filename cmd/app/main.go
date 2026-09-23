@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -47,7 +46,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := ioutil.WriteFile("/release-metadata.json", []byte(result), 0644); err != nil {
+	if err := os.WriteFile("/release-metadata.json", []byte(result), 0644); err != nil {
 		log.Fatalln("error writing release metadata:", err)
 	}
 }

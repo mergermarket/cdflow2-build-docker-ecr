@@ -43,3 +43,19 @@ func TestRunnerRunWithInput(t *testing.T) {
 		log.Fatalln("unexpected errors:", errorBuffer.String())
 	}
 }
+
+func TestRunnerRunWithOutput(t *testing.T) {
+	// Given
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
+	runner := &app.ExecCommandRunner{OutputStream: &outputBuffer, ErrorStream: &errorBuffer}
+
+	// When
+	output, _ := runner.RunWithOutput("/bin/sh", "-c", "echo out: test-output; echo err >&2")
+
+	// Then
+	if output != "out: test-output\n" {
+		log.Fatalln("unexpected output:", output)
+	}
+
+}

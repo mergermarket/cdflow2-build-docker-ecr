@@ -33,6 +33,9 @@ jobs:
       #   with:
       #     registry-type: public
 
+      - name: Get tag
+        run: echo "TAG=$(date +%Y%m%d)" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -45,5 +48,6 @@ jobs:
           push: true
           platforms: linux/arm64,linux/amd64
           tags: |
+            mergermarket/cdflow2-build-docker-ecr:${{ env.TAG }}
             mergermarket/cdflow2-build-docker-ecr:latest
           # public.ecr.aws/p7e3d1i3/cdflow2-build-docker-ecr:latest
